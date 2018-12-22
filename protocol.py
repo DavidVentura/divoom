@@ -50,7 +50,6 @@ class Command:
             message.extend(args.value)
         if extra_bytes:
             message.extend(extra_bytes)
-        #print('message', nice(message))
 
         _masked = mask(message)
         _length = message_length_b(message)
@@ -89,7 +88,7 @@ def checksum(message):
 def mask(_bytes):
     ret = []
     for b in _bytes:
-        if b in (1, 2):
+        if b in (0x1, 0x2):
             ret.append(0x03)
             ret.append(b + 3)
         else:
