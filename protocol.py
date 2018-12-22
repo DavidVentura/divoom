@@ -58,7 +58,10 @@ class Command:
 
     @property
     def args(self):
-        return self._args.name
+        if self._args:
+            return self._args.name
+        else:
+            return '<>'
 
     @property
     def action(self):
