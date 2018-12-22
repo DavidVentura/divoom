@@ -8,6 +8,8 @@ class Device:
     def _connect(self):
         self.sock.connect((self.addr, 4))
         self.sock.settimeout(1)
+        hello = list(self.sock.recv(256))
+        assert hello == [0x0, 0x5, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x0]
 
     def _disconnect(self):
         self.sock.close()
@@ -23,6 +25,7 @@ class Device:
             #    '0x1', '0x8', '0x0', '0x4', '0x59', '0x55', '0x3', '0x4', '0x49', '0x0', '0x4', '0x3', '0x4', '0x2']
 
             print('<', [hex(c) for c in recv])
+            return recv
         except:
             pass
 
