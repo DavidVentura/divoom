@@ -97,10 +97,32 @@ def mask(_bytes):
     #print('MASK: orig:', nice(_bytes), 'ret', nice(ret))
     return ret
 
+def unmask(_bytes):
+    ret = []
+    i = 0
+    while i < len(_bytes):
+        b = _bytes[i]
+        if b == 0x3:
+            b = _bytes[i+1] - 0x3
+            i += 1
+        ret.append(b)
+        i += 1
+    return ret
+
 def test_mask():
     assert mask([0x04, 0x05]) == [0x04, 0x05]
     assert mask([0x01, 0x05]) == [0x03, 0x04, 0x05]
     assert mask([0x01, 0x02]) == [0x03, 0x04, 0x03, 0x05]
+
+def test_unmask():
+    assert unmask([0x04, 0x05]) == [0x04, 0x05]
+    assert unmask([0x03, 0x04, 0x05]) == [0x01, 0x05]
+    assert unmask([0x03, 0x04, 0x03, 0x05]) == [0x01, 0x02]
+
+def test_mask_undoes_unmask():
+    assert unmask(mask([0x04, 0x05])) == [0x04, 0x05]
+    assert mask(unmask([0x03, 0x04, 0x05])) == [0x03, 0x04, 0x05]
+    assert mask(unmask([0x03, 0x04, 0x03, 0x05])) == [0x03, 0x04, 0x03, 0x05]
 
 def test_checksum():
     assert checksum([0x05, 0x00, 0x45, 0x00, 0x01]) == [0x4b, 0x00]
@@ -113,5 +135,7 @@ def test_command():
 
 if __name__ == '__main__':
     test_mask()
+    test_unmask()
+    test_mask_undoes_unmask()
     test_checksum()
     test_command()
