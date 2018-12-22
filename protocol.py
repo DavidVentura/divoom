@@ -14,6 +14,10 @@ class Commands(Enum):
     MUTE = [0x0a, 0x00]
     UNMUTE = [0x0a, 0x01]
     BRIGHTNESS = [0x32]
+    SET_VOL = [0x08]
+    GET_VOL = [0x09]
+    GET_MUTE = [0x0b]
+    SET_DATE = [0x18]
 
 class Views(Enum):
     TEMP_C = [0x01, 0x00]
@@ -28,6 +32,12 @@ class Arguments(Enum):
     BR_HIGH = [0xd2]
     BR_LOW = [0x3f]
     BR_OFF = [0x00]
+
+class Replies(Enum):
+    VOL = [0x06, 0x00, 0x04, 0x09, 0x55]
+    MUTE = [0x0b]
+    TEMP = [0x59]
+    RADIO_FREQ = [0x60]
 
 class Command:
 
