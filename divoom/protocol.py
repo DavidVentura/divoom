@@ -37,10 +37,11 @@ class Arguments(Enum):
     BR_OFF = [0x00]
 
 class Replies(Enum):
-    VOL = [0x09]
-    MUTE = [0x0b]
-    TEMP = [0x59]
-    RADIO_FREQ = [0x60]
+    VOL = 0x09
+    MUTE = 0x0b
+    TEMP = 0x59
+    RADIO_FREQ = 0x60
+    SWITCH_VIEW = 0x46
 
 class Command:
 
@@ -107,10 +108,10 @@ def parse_reply(_bytes):
     length = int.from_bytes(payload[0:1], 'little')
     command = payload[3] # payload[2] == 0x4, payload[4] == 0x55
     data = payload[5:]
-    print('length', length, 'command', command, 'data', data)
+    print('command', hex(command), 'data', data)
 
-    for r in Commands:
-        if command == r.value[0]:
+    for r in Replies:
+        if command == r.value:
             return r, data
 
 def message_length_b(message):
