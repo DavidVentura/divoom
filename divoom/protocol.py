@@ -113,9 +113,6 @@ def parse_reply(_bytes):
         if command == r.value[0]:
             return r, data
 
-def nice(message):
-    return "[%s]" % ', '.join(hex(b) for b in message)
-
 def message_length_b(message):
     # 2 extra bytes to store the length
     _length = len(message) + 2
