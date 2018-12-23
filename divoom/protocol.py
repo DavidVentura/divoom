@@ -108,6 +108,16 @@ def parse_reply_data(_type, _bytes):
         data = _bytes[1]
     elif _type == Replies.MUTE:
         data = bool(_bytes[0])
+    elif _type == Replies.SWITCH_VIEW:
+        first_part = _bytes[1:10]
+        first_part[7] = -1 # Brightness
+
+        data = {'CLOCK_COLOR': _bytes[10:13],
+                'TEMP_COLOR': _bytes[13:16],
+                'BRIGHT': _bytes[8],
+                'VIEW_ID': _bytes[0],
+                'FIRST_PART': first_part,
+                'LAST_PART': _bytes[16:]}
 
     return _type, data
 
