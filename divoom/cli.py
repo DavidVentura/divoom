@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from device import Device
-from protocol import Command, Commands, Views, Arguments
+from protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
 from image import solid_color
 import time
 
@@ -23,9 +23,25 @@ commands = [
             Command(Commands.BRIGHTNESS, Arguments.BR_LOW),
             Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
            ]
+
+commands = [
+            Command(Commands.GET_VOL, None),
+            Command(Commands.GET_VOL, None),
+            Command(Commands.GET_VOL, None),
+            Command(Commands.GET_RADIO, None),
+            Command(Commands.GET_RADIO, None),
+            Command(Commands.GET_RADIO, None),
+#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.3)),
+#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.5)),
+#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.7)),
+            Command(Commands.GET_RADIO, None),
+            Command(Commands.GET_RADIO, None),
+            Command(Commands.GET_RADIO, None),
+           ]
 with Device('11:75:58:78:DB:05') as d:
     for c in commands:
         print(c, flush=True)
-        d.send(c.command)
+        r = d.send(c.command)
+        print(r)
         time.sleep(3)
     input('ready to exit..')
