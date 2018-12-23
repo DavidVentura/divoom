@@ -1,4 +1,5 @@
 import bluetooth
+from protocol import parse_reply, split_reply
 
 class Device:
     def __init__(self, addr):
@@ -20,12 +21,9 @@ class Device:
         try:
             recv = self.sock.recv(256)
             # Might receive many replies
-            # < ['0x1', '0x8', '0x0', '0x4', '0x59', '0x55', '0x3', '0x4', '0x4b', '0x0', '0x6', '0x3', '0x4', '0x2',
-            #    '0x1', '0x6', '0x0', '0x4', '0x32', '0x55', '0xd2', '0x63', '0x3', '0x4', '0x2',
-            #    '0x1', '0x8', '0x0', '0x4', '0x59', '0x55', '0x3', '0x4', '0x49', '0x0', '0x4', '0x3', '0x4', '0x2']
 
             print('<', [hex(c) for c in recv])
-            return recv
+            return self.__parse_reply(recv)
         except:
             pass
 
@@ -36,3 +34,11 @@ class Device:
     def __exit__(self, *args):
         print("Disconnecting")
         self._disconnect()
+
+    def __parse_reply(self, _bytes):
+        ret = []
+        replies = split_reply(list(_bytes))
+        for reply in replies:
+            r = parse_reply(reply)
+            ret.append(r)
+        return ret
