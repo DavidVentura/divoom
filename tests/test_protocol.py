@@ -1,6 +1,14 @@
 from divoom import protocol
 from divoom.protocol import Views, Command, Commands
 
+def test_parse_reply():
+    reply = [0x1, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2]
+    parsed = protocol.parse_reply(reply)
+    assert parsed is not None
+    _comm, data = parsed
+    assert data == [0x9]
+    assert _comm == Commands.SET_VOL
+
 def test_bytes_to_freq():
     assert protocol.bytes_to_freq([0x03, 0x0A]) == 100.3
     assert protocol.bytes_to_freq([0x4f, 0xa]) == 107.9 # 4f == 79
@@ -68,16 +76,3 @@ def test_command():
     assert c.command == [0x01, 0x05, 0x00, 0x45, 0x00, 0x03, 0x04, 0x4B, 0x00, 0x02]
     c = Command(Commands.SWITCH_VIEW, Views.CLOCK_24, [0xff, 0x00, 0x00])
     assert c.command == [0x01, 0x08, 0x00, 0x45, 0x00, 0x03, 0x04, 0xff, 0x00, 0x00, 0x4D, 0x03, 0x04, 0x02]
-
-if __name__ == '__main__':
-    test_mask()
-    test_unmask()
-    test_mask_undoes_unmask()
-    test_checksum()
-    test_command()
-    test_valid_reply()
-    test_split_reply()
-    test_freq_to_bytes()
-    test_bytes_to_freq()
-    test_freq_to_bytes_to_freq()
-    test_bytes_to_freq_to_bytes()
