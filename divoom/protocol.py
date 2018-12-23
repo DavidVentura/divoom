@@ -104,6 +104,8 @@ def parse_reply_data(_type, _bytes):
         data = _bytes[0]
     elif _type == Replies.RADIO_FREQ:
         data = bytes_to_freq(_bytes[:2])
+    elif _type == Replies.TEMP:
+        data = _bytes[1]
     elif _type == Replies.MUTE:
         data = bool(_bytes[0])
 
