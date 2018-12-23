@@ -1,13 +1,13 @@
 from divoom import protocol
-from divoom.protocol import Views, Command, Commands
+from divoom.protocol import Views, Command, Commands, Replies
 
 def test_parse_reply():
-    reply = [0x1, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2]
+    reply = [0x1, 0x6, 0x0, 0x4, 0x9, 0x55, 0x9, 0x70, 0x0, 0x2]
     parsed = protocol.parse_reply(reply)
     assert parsed is not None
     _comm, data = parsed
-    assert data == [0x9]
-    assert _comm == Commands.SET_VOL
+    assert data == 0x9
+    assert _comm == Replies.VOL
 
 def test_bytes_to_freq():
     assert protocol.bytes_to_freq([0x03, 0x0A]) == 100.3

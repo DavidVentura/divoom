@@ -98,6 +98,17 @@ def split_reply(_bytes):
             start = i + 1
     return ret
 
+def parse_reply_data(_type, _bytes):
+    data = _bytes
+    if _type == Replies.VOL:
+        data = _bytes[0]
+    elif _type == Replies.RADIO_FREQ:
+        data = bytes_to_freq(_bytes[:2])
+    elif _type == Replies.MUTE:
+        data = bool(_bytes[0])
+
+    return _type, data
+
 def parse_reply(_bytes):
     assert _bytes[0] == _PROTO.START_BYTE[0]
     assert _bytes[-1] == _PROTO.END_BYTE[0]
@@ -112,7 +123,7 @@ def parse_reply(_bytes):
 
     for r in Replies:
         if command == r.value:
-            return r, data
+            return parse_reply_data(r, data)
 
 def message_length_b(message):
     # 2 extra bytes to store the length
