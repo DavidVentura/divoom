@@ -18,13 +18,15 @@ class Device:
     def send(self, package):
         self.sock.send(bytes(package))
         print('>', [hex(c) for c in package])
+        return self.get_message()
+
+    def get_message(self):
         try:
-            recv = self.sock.recv(256)
-            # Might receive many replies
+            recv = self.sock.recv(256) # Might receive many replies
 
             print('<', [hex(c) for c in recv])
             return self.__parse_reply(recv)
-        except:
+        except bluetooth.btcommon.BluetoothError:
             pass
 
     def __enter__(self):
