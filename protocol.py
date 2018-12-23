@@ -16,8 +16,11 @@ class Commands(Enum):
     BRIGHTNESS = [0x32]
     SET_VOL = [0x08]
     GET_VOL = [0x09]
+    GET_TEMP = [0x59]
     GET_MUTE = [0x0b]
     SET_DATE = [0x18]
+    GET_RADIO = [0x60]
+    SET_RADIO = [0x61]
 
 class Views(Enum):
     TEMP_C = [0x01, 0x00]
@@ -34,7 +37,7 @@ class Arguments(Enum):
     BR_OFF = [0x00]
 
 class Replies(Enum):
-    VOL = [0x06, 0x00, 0x04, 0x09, 0x55]
+    VOL = [0x09]
     MUTE = [0x0b]
     TEMP = [0x59]
     RADIO_FREQ = [0x60]
@@ -75,6 +78,41 @@ class Command:
         return "%s %s" % (self.action, self.args)
 
 
+def valid_reply(_bytes):
+    return len(_bytes) > 6 and\
+            _bytes[0] == _PROTO.START_BYTE[0] and\
+            _bytes[-1] == _PROTO.END_BYTE[0] and\
+            _bytes[3] == 0x4 and\
+            _bytes[5] == 0x55
+
+def split_reply(_bytes):
+    ret = []
+    start = 0
+    for i in range(0, len(_bytes)):
+        c = _bytes[i]
+        if c == _PROTO.END_BYTE[0]:
+            new_reply = _bytes[start:i+1]
+            if valid_reply(new_reply):
+                ret.append(new_reply)
+            start = i + 1
+    return ret
+
+def parse_reply(_bytes):
+    assert _bytes[0] == _PROTO.START_BYTE[0]
+    assert _bytes[-1] == _PROTO.END_BYTE[0]
+
+    head, *payload, tail = _bytes
+    payload = unmask(payload)
+    payload = payload[:-2] # discard checksum
+    length = int.from_bytes(payload[0:1], 'little')
+    command = payload[3] # payload[2] == 0x4, payload[4] == 0x55
+    data = payload[5:]
+    print('length', length, 'command', command, 'data', data)
+
+    for r in Commands:
+        if command == r.value[0]:
+            return r, data
+
 def nice(message):
     return "[%s]" % ', '.join(hex(b) for b in message)
 
@@ -85,7 +123,6 @@ def message_length_b(message):
 
 def checksum(message):
     _bytes = sum(message).to_bytes(2, byteorder='little')
-    #print('checksumming', nice(message), 'to', nice(_bytes))
     return list(_bytes)
 
 def mask(_bytes):
@@ -96,7 +133,6 @@ def mask(_bytes):
             ret.append(b + 3)
         else:
             ret.append(b)
-    #print('MASK: orig:', nice(_bytes), 'ret', nice(ret))
     return ret
 
 def unmask(_bytes):
@@ -110,6 +146,65 @@ def unmask(_bytes):
         ret.append(b)
         i += 1
     return ret
+
+def freq_to_bytes(freq):
+    freq = freq * 10 # 100.3 => 1003
+                     # 88.1 => 881
+    if freq > 1000:
+        ret = [freq - 1000, int(freq / 100)]
+    else:
+        ret = [freq % 100, int(freq / 100)]
+    return ret
+
+def bytes_to_freq(_bytes):
+    assert len(_bytes) == 2
+    first = _bytes[1] * 10
+    second = _bytes[0] / 10
+    return first + second
+
+def test_bytes_to_freq():
+    assert bytes_to_freq([0x03, 0x0A]) == 100.3
+    assert bytes_to_freq([0x4f, 0xa]) == 107.9 # 4f == 79
+    assert bytes_to_freq([0x51, 0x8]) == 88.1 # 0x51 == 81
+
+def test_freq_to_bytes():
+    assert freq_to_bytes(100.3) == [0x03, 0x0A]
+    assert freq_to_bytes(100.9) == [0x09, 0x0A]
+    assert freq_to_bytes(107.3) == [73, 0x0A]
+    assert freq_to_bytes(90.3) == [0x03, 0x09]
+    assert freq_to_bytes(90.9) == [0x09, 0x09]
+    assert freq_to_bytes(97.3) == [73, 0x09]
+
+def test_freq_to_bytes_to_freq():
+    assert bytes_to_freq(freq_to_bytes(100.3)) == 100.3
+    assert bytes_to_freq(freq_to_bytes(90.3)) == 90.3
+    assert bytes_to_freq(freq_to_bytes(88.3)) == 88.3
+
+def test_bytes_to_freq_to_bytes():
+    assert freq_to_bytes(bytes_to_freq([73, 0x09])) == [73, 0x09]
+
+def test_valid_reply():
+    assert valid_reply([0x1, None, None, 0x4, None, 0x55, None, None, None, 0x2])
+    assert valid_reply([0x1, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2])
+    assert valid_reply([None, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2]) ==  False
+    assert valid_reply([0x1, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, None]) ==  False
+    assert valid_reply([0x1, 0x6, 0x0, None, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2]) ==  False
+    assert valid_reply([0x1, 0x6, 0x0, 0x4, 0x8, None, 0x9, 0x70, 0x0, 0x2]) ==  False
+
+def test_split_reply():
+    replies = split_reply([0x1, 0x8, 0x0, 0x4, 0x59, 0x55, 0x3, 0x4, 0x4b, 0x0, 0x6, 0x3, 0x4, 0x2,
+                           0x1, 0x6, 0x0, 0x4, 0x32, 0x55, 0xd2, 0x63, 0x3, 0x4, 0x2,
+                           0x1, 0x8, 0x0, 0x4, 0x59, 0x55, 0x3, 0x4, 0x49, 0x0, 0x4, 0x3, 0x4, 0x2])
+
+    assert len(replies) == 3
+    for reply in replies:
+        assert len(reply) >= 6
+        assert reply[0] == _PROTO.START_BYTE[0]
+        assert reply[-1] == _PROTO.END_BYTE[0]
+
+
+    replies = split_reply([0x1, 0x6, 0x0, 0x4, 0x8, 0x55, 0x9, 0x70, 0x0, 0x2])
+    assert len(replies) == 1
 
 def test_mask():
     assert mask([0x04, 0x05]) == [0x04, 0x05]
@@ -141,3 +236,9 @@ if __name__ == '__main__':
     test_mask_undoes_unmask()
     test_checksum()
     test_command()
+    test_valid_reply()
+    test_split_reply()
+    test_freq_to_bytes()
+    test_bytes_to_freq()
+    test_freq_to_bytes_to_freq()
+    test_bytes_to_freq_to_bytes()
