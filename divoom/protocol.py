@@ -148,9 +148,9 @@ def freq_to_bytes(freq):
     freq = freq * 10 # 100.3 => 1003
                      # 88.1 => 881
     if freq > 1000:
-        ret = [freq - 1000, int(freq / 100)]
+        ret = [int(freq - 1000), int(freq / 100)]
     else:
-        ret = [freq % 100, int(freq / 100)]
+        ret = [int(freq % 100), int(freq / 100)]
     return ret
 
 def bytes_to_freq(_bytes):
