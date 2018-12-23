@@ -1,5 +1,5 @@
 import bluetooth
-from protocol import parse_reply, split_reply
+from divoom.protocol import parse_reply, split_reply
 
 class Device:
     def __init__(self, addr):

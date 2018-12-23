@@ -6,5 +6,15 @@ setup(
     packages=['divoom',],
     license='GPLv3',
     long_description=open('README.md').read(),
+    entry_points = {
+        'console_scripts': ['cli=divoom.cli:main'],
+    },
+    install_requires=[
+        'PyBluez==0.22',
+    ],
+    extras_requires={
+        'dev': [
+            'pytest==4.0.2',
+        ]
+    }
 )
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from device import Device
-from protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
-from image import solid_color
+from divoom.device import Device
+from divoom.protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
+from divoom.image import solid_color
 import time
 
 #commands = [Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
@@ -38,10 +38,11 @@ commands = [
             Command(Commands.GET_RADIO, None),
             Command(Commands.GET_RADIO, None),
            ]
-with Device('11:75:58:78:DB:05') as d:
-    for c in commands:
-        print(c, flush=True)
-        r = d.send(c.command)
-        print(r)
-        time.sleep(3)
-    input('ready to exit..')
+def main():
+    with Device('11:75:58:78:DB:05') as d:
+        for c in commands:
+            print(c, flush=True)
+            r = d.send(c.command)
+            print(r)
+            time.sleep(3)
+        input('ready to exit..')
