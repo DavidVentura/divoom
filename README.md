@@ -1,10 +1,32 @@
 An attempt to consolidate some bits of information about divoom into a clean python3.6 package
-
 1- https://github.com/MarcG046/timebox/blob/master/doc/protocol.md
 
-Issues and things I do not understand
+# Features
 
-# Replies to changing views
+- (Implemented parts of) the protocol is fully tested
+- Server is decoupled from control (via redis pubsub) - the connection can remain open permanently
+    - Writing a web front end for this should be easy
+
+Implemented parts of the Protocol:
+- Switch view
+- Send image
+- Toggle Radio
+- Toggle Mute
+- Change radio frequency
+- Set Volume
+
+Missing:
+- Helper to convert images to the required format
+
+# Things I do not understand
+
+## How to set brightness to an absolute value:
+Sending 0x32 (brightness) with different levels has always the same output: the brightness cycles between OFF, LOW, MED, HIGH
+
+Sending 0x74 does allow me to do OFF, LOW, HIGH reliably.. but from the app I can set more brightness levels
+
+## Replies to changing views
+
 Smashing the SWITCH button outputs:
 ```
 command 0x46 data [0, 0, 6, 255, 0, 0, 0, 0, 100, 1, 75, 0, 0, 75, 0, 0, 255, 0, 0, 169, 132, 0]
@@ -33,7 +55,7 @@ command 0x46 data [0, 0, 6, 255, 0, 0, 0, 0, 100, 1, 11, 22, 33, 100, 111, 122, 
 len == 22
 
 indexes:
-0 = view ? why is 5 repeated?
+0 = view, but why is 5 repeated?
 1.. 10 == ?
 11 = brightness
 12 = ?
@@ -46,8 +68,10 @@ indexes:
 {'TEMP_COLOR': [100, 111, 122],
  'CLOCK_COLOR': [11, 22, 33],
  'VIEW_ID': 4,
- 'FIRST_PART': [0, 6, 255, 0, 0, 0, 0, 100, 1],
+ 'BRIGHTNESS': 100,
+ 'FIRST_PART': [0, 6, 255, 0, 0, 0, 0, -1, 1], # -1 because the value is known to be brightness
  'LAST_PART': [255, 0, 0, 169, 132, 0],
 }
 ```
-# 
+
+
