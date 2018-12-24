@@ -25,13 +25,16 @@ def _pack_tuples_to_image(tuples):
     assert len(ret) == 182 # 12 bits per pixel * 11 * 11 pixels / 8 bits per byte = 181.5
     return ret
 
-def image_to_bytes(filename):
-    assert os.path.isfile(filename)
-    im = Image.open(filename)
-    assert im.size == (SIZE, SIZE)
+def _image_to_bytes(im):
     if im.mode != 'RGB':
         im = im.convert('RGB')
 
     squash = lambda x: min(int(round(x/16)), 15) # 255 -> 15
     data = [(squash(r), squash(g), squash(b)) for (r, g, b) in im.getdata()]
     return _pack_tuples_to_image(data)
+
+def image_to_bytes(filename):
+    assert os.path.isfile(filename)
+    im = Image.open(filename)
+    assert im.size == (SIZE, SIZE)
+    return _image_to_bytes(im)
