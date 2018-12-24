@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-from divoom.device import Device
 from divoom.protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
 from divoom.image import solid_color
 import time
+import threading
+import redis
+import queue
+import random
 
 #commands = [Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
 #            Command(Commands.BRIGHTNESS, Arguments.BR_LOW),
@@ -31,18 +34,26 @@ commands = [
             Command(Commands.GET_RADIO, None),
             Command(Commands.GET_RADIO, None),
             Command(Commands.GET_RADIO, None),
-#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.3)),
-#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.5)),
-#            Command(Commands.SET_RADIO, None, freq_to_bytes(100.7)),
+            Command(Commands.SET_RADIO, None, freq_to_bytes(100.3)),
+            Command(Commands.SET_RADIO, None, freq_to_bytes(100.5)),
+            Command(Commands.SET_RADIO, None, freq_to_bytes(100.7)),
             Command(Commands.GET_RADIO, None),
             Command(Commands.GET_RADIO, None),
             Command(Commands.GET_RADIO, None),
            ]
+
+def handle_replies(message):
+    data = message['data']
+    reply = list(data)
+    print(reply)
+
 def main():
-    with Device('11:75:58:78:DB:05') as d:
-        for c in commands:
-            print(c, flush=True)
-            r = d.send(c.command)
-            print(r)
-            time.sleep(3)
-        input('ready to exit..')
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    p = r.pubsub()
+    p.subscribe(replies=handle_replies)
+
+    while True:
+        b = Command(Commands.SET_RADIO, None, freq_to_bytes(random.randrange(890, 1079) / 10)).command
+        r.publish('commands', bytes(b))
+        p.get_message()
+        time.sleep(1)

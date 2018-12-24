@@ -7,10 +7,11 @@ setup(
     license='GPLv3',
     long_description=open('README.md').read(),
     entry_points = {
-        'console_scripts': ['cli=divoom.cli:main'],
+        'console_scripts': ['dvcli=divoom.cli:main', 'dvserver=divoom.server:main'],
     },
     install_requires=[
         'PyBluez==0.22',
+        'redis>=3.0.1'
     ],
     extras_requires={
         'dev': [
