@@ -1,6 +1,9 @@
 import divoom.image
 import pytest
+import struct
+from PIL import Image
 
+SIZE = 11
 def test_solid_color():
     image = divoom.image.solid_color(0, 0, 0)
     assert len(image) == 182
@@ -20,4 +23,10 @@ def test_solid_color():
         assert image[i] == states[i % len(states)]
     assert image[-1] == blue
 
-test_solid_color()
+def test_image_to_bytes():
+    byte_value = struct.pack('<3B', 255, 255, 255)
+    l = b''.join([byte_value] * SIZE * SIZE)
+    image_data = bytes(l)
+    image = Image.frombytes('RGB', (SIZE, SIZE), image_data)
+    _bytes = divoom.image._image_to_bytes(image)
+    assert _bytes == divoom.image.solid_color(0xf, 0xf, 0xf)
