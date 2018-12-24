@@ -15,9 +15,9 @@ Implemented parts of the Protocol:
 - Toggle Mute
 - Change radio frequency
 - Set Volume
+- (Extra) Helper to convert images to the required format
 
 Missing:
-- Helper to convert images to the required format
 - Set time
 - Animations
 - Weather

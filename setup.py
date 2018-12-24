@@ -11,7 +11,8 @@ setup(
     },
     install_requires=[
         'PyBluez==0.22',
-        'redis>=3.0.1'
+        'redis>=3.0.1',
+        'pillow>=5.3.0',
     ],
     extras_requires={
         'dev': [
