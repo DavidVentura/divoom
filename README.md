@@ -18,6 +18,8 @@ Implemented parts of the Protocol:
 
 Missing:
 - Helper to convert images to the required format
+- Set time
+- Animations
 - Weather
 - Calendar
 - Notifications
@@ -56,6 +58,7 @@ Command(Commands.SWITCH_VIEW, Views.TEMP_C, extra_bytes=[100, 111, 122]),
 command 0x46 data [0, 0, 6, 255, 0, 0, 0, 0, 100, 1, 11, 22, 33, 100, 111, 122, 255, 0, 0, 169, 132, 0]
 ```
 
+```
 len == 22
 
 indexes:
@@ -65,7 +68,8 @@ indexes:
 12 = ?
 10:13 == CLOCK rgb
 13:16 == TEMP_C rgb
-16 == intensity?
+?
+```
 
 
 ```
