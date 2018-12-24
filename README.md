@@ -18,6 +18,9 @@ Implemented parts of the Protocol:
 
 Missing:
 - Helper to convert images to the required format
+- Weather
+- Calendar
+- Notifications
 
 # Things I do not understand
 
