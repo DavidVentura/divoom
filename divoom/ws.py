@@ -14,6 +14,11 @@ state = {}
 def new_client(client, server):
     server.send_message_to_all(json.dumps(state))
 
+def str_to_command(command):
+    for c in Commands:
+        if c.name == command:
+            return c
+
 def msg_received_ws(q):
     def wrap(client, server, msg):
         try:
@@ -21,8 +26,17 @@ def msg_received_ws(q):
         except:
             print("Got invalid json from client (%s)" % msg)
             return
+
+        if 'command' not in msg or 'value' not in msg:
+            print("Got invalid json from client (%s) (no 'command' or 'value')" % msg)
+            return
+        command = str_to_command(msg['command'])
+        if command is None:
+            print("Invalid command: %s" % msg)
+            return
+
         print("Got %s from a ws client; putting to queue" % msg)
-        q.put(msg)
+        q.put((command, msg['value']))
     return wrap
 
 def handle_replies_redis(r_q):
@@ -52,7 +66,7 @@ def main():
         if not ws_q.empty():
             data = ws_q.get()
             print('from ws', data)
-            r.publish('commands', bytes(data))
+            #r.publish('commands', bytes(data))
         if not r_q.empty():
             data = r_q.get()
             print('from redis', data)
