@@ -83,11 +83,15 @@ class Command:
     def __repr__(self):
         return "%s %s" % (self.action, self.args)
 
+def valid_command(_bytes):
+    return _bytes[0] == _PROTO.START_BYTE[0] and\
+           _bytes[-1] == _PROTO.END_BYTE[0]
+    # TODO validate checksum
+
 
 def valid_reply(_bytes):
     return len(_bytes) > 6 and\
-            _bytes[0] == _PROTO.START_BYTE[0] and\
-            _bytes[-1] == _PROTO.END_BYTE[0] and\
+            valid_command(_bytes) and\
             _bytes[3] == 0x4 and\
             _bytes[5] == 0x55
 
@@ -127,8 +131,7 @@ def parse_reply_data(_type, _bytes):
     return _type, data
 
 def parse_reply(_bytes):
-    assert _bytes[0] == _PROTO.START_BYTE[0]
-    assert _bytes[-1] == _PROTO.END_BYTE[0]
+    assert valid_command(_bytes)
 
     head, *payload, tail = _bytes
     payload = unmask(payload)
