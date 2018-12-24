@@ -1,30 +1,23 @@
 import struct
+SIZE = 11
 def solid_color(r, g, b):
-    SIZE = 11
-    ret = []
     assert r < 16 and r >= 0
     assert g < 16 and g >= 0
     assert b < 16 and b >= 0
+    return _pack_tuples_to_image([ (r, g, b) ] * SIZE * SIZE)
 
-    #rgb = 12 bits
-    _b = None
-    state = 'new'
-    for y in range(0, SIZE):
-        for x in range(0, SIZE):
-            if state == 'new':
-                _b = (g << 4) + r
-                ret.append(_b)
-                _b = b
-                state = 'started'
-            elif state == 'started':
-                _b += (r << 4)
-                ret.append(_b)
-                _b = (b << 4) + g
-                ret.append(_b)
-                _b = None
-                state = 'new'
+def _pack_tuples_to_image(tuples):
+    assert len(tuples) == SIZE * SIZE
+    ret = []
+    for i in range(0, len(tuples)-1, 2):
+        r1, g1, b1 = tuples[i]
+        r2, g2, b2 = tuples[i+1]
+        ret.append((g1 << 4) + r1)
+        ret.append((r2 << 4) + b1)
+        ret.append((b2 << 4) + g2)
 
-    if _b is not None:
-        ret.append(b)
+    r, g, b = tuples[-1]
+    ret.append((g << 4) + r)
+    ret.append((0 << 4) + b) # there's no next pixel
     assert len(ret) == 182 # 12 bits per pixel * 11 * 11 pixels / 8 bits per byte = 181.5
     return ret
