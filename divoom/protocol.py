@@ -46,7 +46,9 @@ class Replies(Enum):
     MUTE = 0x0b
     TEMP = 0x59
     RADIO_FREQ = 0x60
+    SET_RADIO_FREQ = 0x61
     SWITCH_VIEW = 0x46
+    UNKNOWN = 0x0
 
 class Command:
 
@@ -144,6 +146,7 @@ def parse_reply(_bytes):
     for r in Replies:
         if command == r.value:
             return parse_reply_data(r, data)
+    return command, data
 
 def message_length_b(message):
     # 2 extra bytes to store the length

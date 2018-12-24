@@ -2,10 +2,10 @@
 import redis
 import time
 import threading
-import queue
+import json
 
 from divoom.device import Device
-from divoom.protocol import valid_command
+from divoom.protocol import valid_command, Replies
 
 def handle_command(device):
     def _handle_command(message):
@@ -22,12 +22,14 @@ def handle_command(device):
 def handle_replies(redis, device):
     while True:
         replies = device.get_message()
-        for reply in replies:
-            if reply is None:
-                print("Reply was none!! FIX")
-                print(replies)
-                continue
-            redis.publish('replies', bytes(reply))
+        for (_type, value) in replies:
+            data = {'VALUE': value}
+            if type(_type) is Replies:
+                data['TYPE'] = _type.name
+            else:
+                data['TYPE'] = _type
+            print(data)
+            redis.publish('replies', json.dumps(data))
 
 def main():
     r = redis.Redis(host='localhost', port=6379, db=0)
@@ -41,12 +43,18 @@ def main():
     t.start()
     p.subscribe(commands=handle_command(d))
 
-    while True:
-        p.get_message()
-        time.sleep(0.1)
-
-    d._disconnect()
-    t.join()
+    try:
+        while True:
+            p.get_message()
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print('Dc')
+        d._disconnect()
+        print('join')
+        t.join()
+        print('done')
 
 if __name__ == '__main__':
     main()

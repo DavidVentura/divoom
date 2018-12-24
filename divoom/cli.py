@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from divoom.protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
 from divoom.image import solid_color
+import json
 import time
 import threading
 import redis
@@ -43,9 +44,8 @@ commands = [
            ]
 
 def handle_replies(message):
-    data = message['data']
-    reply = list(data)
-    print(reply)
+    data = json.loads(message['data'].decode('ascii'))
+    print(data)
 
 def main():
     r = redis.Redis(host='localhost', port=6379, db=0)
