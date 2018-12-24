@@ -87,7 +87,8 @@ class Command:
         return "%s %s" % (self.action, self.args)
 
 def valid_command(_bytes):
-    return _bytes[0] == _PROTO.START_BYTE[0] and\
+    return len(_bytes) > 2 and\
+            _bytes[0] == _PROTO.START_BYTE[0] and\
            _bytes[-1] == _PROTO.END_BYTE[0]
     # TODO validate checksum
 
