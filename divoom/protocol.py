@@ -23,6 +23,7 @@ class Commands(Enum):
     GET_RADIO = [0x60]
     SET_RADIO = [0x61]
     SET_NOTIF = [0x50]
+    SET_WEATHER = [0x5f]
 
 class Views(Enum):
     CLOCK_12 = [0x00, 0x00]
@@ -48,6 +49,7 @@ class Replies(Enum):
     TEMP = 0x59
     RADIO_FREQ = 0x60
     SET_RADIO_FREQ = 0x61
+    _SWITCH_VIEW = 0x45
     SWITCH_VIEW = 0x46
     UNKNOWN = 0x0
 
@@ -85,6 +87,21 @@ class Command:
 
     def __repr__(self):
         return "%s %s" % (self.action, self.args)
+
+    @classmethod
+    def from_bytes(cls, _bytes):
+        _bytes = _bytes[3:-3] # head, length, length, *, cksum, cksum, tail
+        command = None
+        for c in Commands:
+            if c.value[0] == _bytes[0]:
+                command = c
+        if command is None:
+            raise ValueError("%s is an invalid command" % _bytes[0])
+
+        extra_bytes = []
+        if len(_bytes) > 1:
+            extra_bytes = _bytes[1:]
+        return cls(command, None, extra_bytes)
 
 def valid_command(_bytes):
     return len(_bytes) > 2 and\
