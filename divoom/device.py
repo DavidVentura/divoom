@@ -1,6 +1,7 @@
 import bluetooth
 from divoom.protocol import parse_reply, split_reply
 
+HELLO_BYTES = [0x0, 0x5, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x0]
 class Device:
     def __init__(self, addr, timeout=1):
         self.sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -10,7 +11,7 @@ class Device:
     def _connect(self):
         self.sock.connect((self.addr, 4))
         hello = list(self.sock.recv(256))
-        assert hello == [0x0, 0x5, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x0]
+        assert hello == HELLO_BYTES
 
     def _disconnect(self):
         self.sock.close()
