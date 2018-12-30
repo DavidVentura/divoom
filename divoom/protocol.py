@@ -29,8 +29,8 @@ class Views(Enum):
     CLOCK_24 = [0x00, 0x01]
     TEMP_C = [0x01, 0x00]
     TEMP_F = [0x01, 0x01]
-    OFF = [0x02]
-    ANIM_HC = [0x03]
+    ANIM_HC = [0x02]
+    OFF = [0x03]
     EQ = [0x04]
     ANIM_DYN = [0x05]
     STOPWATCH = [0x06, 0x00]
@@ -94,10 +94,17 @@ def valid_command(_bytes):
 
 
 def valid_reply(_bytes):
-    return len(_bytes) > 6 and\
+    return len(_bytes) >= 6 and\
             valid_command(_bytes) and\
-            _bytes[3] == 0x4 and\
-            _bytes[5] == 0x55
+            (_bytes[2] == 0xaa or\
+            (_bytes[3] == 0x4 and\
+            _bytes[5] == 0x55))
+
+def error_reply(_bytes):
+    if _bytes[2] == 0xaa:
+        return _bytes[1], _bytes[3:-3]
+    # 3 => -3 to convert
+    # [head, command, 0xaa, _, cksum1, cksum2, tail] => [_]
 
 def split_reply(_bytes):
     ret = []
@@ -123,12 +130,16 @@ def parse_reply_data(_type, _bytes):
         data = bool(_bytes[0])
     elif _type == Replies.SWITCH_VIEW:
         first_part = _bytes[1:10]
+        first_part[3] = -1 # Anim 1
         first_part[7] = -1 # Brightness
+        first_part[8] = -1 # Anim2
 
         data = {'CLOCK_COLOR': _bytes[10:13],
                 'TEMP_COLOR': _bytes[13:16],
                 'BRIGHT': _bytes[8],
                 'VIEW_ID': _bytes[0],
+                'ANIM1': _bytes[3],
+                'ANIM2': _bytes[9],
                 'FIRST_PART': first_part,
                 'LAST_PART': _bytes[16:]}
 
@@ -136,7 +147,6 @@ def parse_reply_data(_type, _bytes):
 
 def parse_reply(_bytes):
     assert valid_command(_bytes)
-
     head, *payload, tail = _bytes
     payload = unmask(payload)
     payload = payload[:-2] # discard checksum
@@ -162,7 +172,7 @@ def checksum(message):
 def mask(_bytes):
     ret = []
     for b in _bytes:
-        if b in (0x1, 0x2):
+        if b in (0x1, 0x2, 0x3):
             ret.append(0x03)
             ret.append(b + 3)
         else:
