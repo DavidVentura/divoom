@@ -20,6 +20,7 @@ setup(
     extras_requires={
         'dev': [
             'pytest==4.0.2',
+            'pyshark',
         ]
     }
 )
