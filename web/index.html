@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 330px;
+                height: 330px;
+                border: 1px solid black;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: -webkit-crisp-edges;
+                image-rendering: crisp-edges;
+            }
+        </style>
+
+    </head>
+    <body>
+        <canvas id='canvas' width=330 height=330></canvas>
+        <button onclick='clearCanvas()'>Clear</button>
+        <button onclick='setColor(255,0,0)'>R</button>
+        <button onclick='setColor(0,255,0)'>G</button>
+        <button onclick='setColor(0,0,255)'>B</button>
+
+    </body>
+    <script type="text/javascript">
+        // get canvas context
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var size = 11;
+        var scale = 30;
+        var color = '#F00';
+        var canvasState = Array(size*size).fill(0);
+        function style_to_int(style) {
+            return parseInt(style.replace('#', ''), 16);
+        }
+
+        function setColor(r,g,b){
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            color = style_to_int(ctx.fillStyle);
+        }
+        function drawGrid() {
+            ctx.scale(1/scale, 1/scale);
+            ctx.strokeStyle = '#000';
+            for(var i=0; i<size; i++) {
+               ctx.moveTo(i*scale, 0); 
+               ctx.lineTo(i*scale, canvas.height);
+
+               ctx.moveTo(0, i*scale); 
+               ctx.lineTo(canvas.width, i*scale);
+            }
+            ctx.stroke();
+            ctx.scale(scale, scale);
+        }
+        function clearCanvas() {
+            canvasState = Array(size*size).fill(0);
+            ctx.clearRect(0, 0, size, size);
+            drawGrid();
+        }
+        function changePixel(x, y) {
+            canvasState[y*size+x] = color;
+            ctx.fillRect(x, y, 1, 1);
+            drawGrid();
+        }
+        ctx.scale(scale, scale);
+        clearCanvas();
+        setColor(255, 0, 0);
+        canvas.addEventListener("mouseup", function (e) {
+            x = Math.floor((e.clientX-size)/scale);
+            y = Math.floor((e.clientY-size)/scale);
+            changePixel(x, y);
+        }, false);
+    </script>
+</html>
