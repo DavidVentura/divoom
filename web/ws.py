@@ -52,8 +52,9 @@ def handle_replies_redis(r_q):
     def _handle_replies_redis(message):
         m = message['data'].decode('ascii')
         data = json.loads(m)
-        state.update(data)
-        r_q.put(m)
+        ret = {data['TYPE']: data['VALUE']}
+        state.update(ret)
+        r_q.put(json.dumps(ret))
     return _handle_replies_redis
 
 def main():
