@@ -65,10 +65,12 @@ class Command:
         if extra_bytes:
             message.extend(extra_bytes)
 
-        _masked = mask(message)
+        _message_m = mask(message)
         _length = message_length_b(message)
+        _length_m = mask(_length)
+
         _ck = mask(checksum(_length + message))
-        self._command = _PROTO.START_BYTE + _length + _masked + _ck + _PROTO.END_BYTE
+        self._command = _PROTO.START_BYTE + _length_m + _message_m + _ck + _PROTO.END_BYTE
 
     @property
     def args(self):
