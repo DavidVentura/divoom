@@ -9,26 +9,88 @@
                 image-rendering: -moz-crisp-edges;
                 image-rendering: -webkit-crisp-edges;
                 image-rendering: crisp-edges;
+                display: block;
+            }
+            .row {
+                display: block;
+                width: 100%;
+                margin-top: 10px;
             }
         </style>
 
     </head>
     <body>
         <canvas id='canvas' width=330 height=330></canvas>
-        <button onclick='clearCanvas()'>Clear</button>
-        <button onclick='setColor(255,0,0)'>R</button>
-        <button onclick='setColor(0,255,0)'>G</button>
-        <button onclick='setColor(0,0,255)'>B</button>
+        <div class='row'>
+            <button onclick='clearCanvas()'>Clear</button>
+            <button onclick='setColor(255,0,0)'>R</button>
+            <button onclick='setColor(0,255,0)'>G</button>
+            <button onclick='setColor(0,0,255)'>B</button>
+        </div>
+
+        <div class='row'>
+            <button onclick='sendCommand("RADIO_ON", [])'>RADIO ON</button>
+            <button onclick='sendCommand("RADIO_OFF", [])'>RADIO OFF</button>
+        
+            <label>
+            <input type=range min=88.9 max=107.9 step=0.1 data-label='RADIO_FREQ' onchange='sendCommand("SET_RADIO", parseFloat(this.value))' />
+                RADIO
+            </label>
+
+            <label>FREQ:<b class='label' data-label='RADIO_FREQ'>?</b></label>
+        </div>
+
+        <label>
+            <input type=range min=0 max=9 step=1 data-label='VOL' onchange='sendCommand("SET_VOL", parseInt(this.value))' /> VOL
+            <b class='label' data-label='VOL'>?</b>
+        </label>
 
     </body>
     <script type="text/javascript">
         // get canvas context
+        var ws = new WebSocket("ws://localhost:8998");
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');
         var size = 11;
         var scale = 30;
         var color = '#F00';
         var canvasState = Array(size*size).fill(0);
+
+        var labels = document.querySelectorAll('.label[data-label]');
+        var inputs = document.querySelectorAll('input[data-label]');
+        var labelMap = {};
+        var inputMap = {};
+
+        for (var i of inputs) {
+            inputMap[i.dataset.label] = i;
+        }
+        for (var l of labels) {
+            labelMap[l.dataset.label] = l;
+        }
+
+        ws.onmessage = function(m) {
+            var data = JSON.parse(m.data);
+            for (var k in data) {
+                v = data[k];
+                console.log(k, v);
+                if (k in labelMap) {
+                    labelMap[k].innerText = v;
+                }
+                if (k in inputMap) {
+                    inputMap[k].value = v;
+                }
+            }
+        };
+
+        function sendCommand(command, value) {
+            var msg = JSON.stringify({command, value});
+            console.log(msg);
+            if (ws.readyState == 1)
+                ws.send(msg);
+            else
+                console.log('WS NOT READY to send');
+        }
+        //sendCommand('SWITCH_VIEW', [ 0x2, 0xf0, 0x30, 0x0, 0x5c]);
         function style_to_int(style) {
             return parseInt(style.replace('#', ''), 16);
         }
@@ -54,11 +116,22 @@
             canvasState = Array(size*size).fill(0);
             ctx.clearRect(0, 0, size, size);
             drawGrid();
+            sendImage();
+        }
+        function sendImage() {
+            var tuples = canvasState.map(c => [squash((c & 0xff0000) >> 16),
+                                               squash((c & 0xff00) >> 8),
+                                               squash(c & 0xff) ]);
+            sendCommand('STATIC_IMG', tuples);
+        }
+        function squash(value) {
+            return Math.min(Math.round(value/16), 15);
         }
         function changePixel(x, y) {
             canvasState[y*size+x] = color;
             ctx.fillRect(x, y, 1, 1);
             drawGrid();
+            sendImage();
         }
         ctx.scale(scale, scale);
         clearCanvas();

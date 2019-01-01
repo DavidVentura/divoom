@@ -26,6 +26,7 @@ def transform_value(command, value):
         return freq_to_bytes(value)
     else:
         return value
+
 def msg_received_ws(q):
     def wrap(client, server, msg):
         try:
