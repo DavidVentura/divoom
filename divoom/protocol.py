@@ -44,7 +44,8 @@ class Arguments(Enum):
     BR_OFF = [0x00]
 
 class Replies(Enum):
-    VOL = 0x09
+    GET_VOL = 0x08
+    SET_VOL = 0x09
     MUTE = 0x0b
     TEMP = 0x59
     RADIO_FREQ = 0x60
@@ -139,12 +140,13 @@ def split_reply(_bytes):
 
 def parse_reply_data(_type, _bytes):
     data = _bytes
-    if _type in (Commands.SET_VOL, Commands.GET_VOL):
+    if _type in (Replies.SET_VOL, Replies.GET_VOL):
         data = _bytes[0]
-        _type = Command.GET_VOL
-    elif _type in (Commands.SET_RADIO, Commands.GET_RADIO):
+        _type = Replies.GET_VOL
+    elif _type in (Replies.RADIO_FREQ,): # Replies.SET_RADIO_FREQ, 
+        print(_type, _bytes)
         data = bytes_to_freq(_bytes[:2])
-        _type = Command.GET_RADIO
+        _type = Replies.RADIO_FREQ
     elif _type == Replies.TEMP:
         data = _bytes[1]
     elif _type == Replies.MUTE:
