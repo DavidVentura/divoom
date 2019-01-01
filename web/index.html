@@ -33,7 +33,7 @@
             <button onclick='sendCommand("RADIO_OFF", [])'>RADIO OFF</button>
         
             <label>
-            <input type=range min=88.9 max=107.9 step=0.1 data-label='RADIO_FREQ' onchange='sendCommand("SET_RADIO", parseFloat(this.value))' />
+            <input type=range min=88.9 max=107.9 step=0.1 data-label='RADIO_FREQ' onchange='setRadio(parseFloat(this.value))' />
                 RADIO
             </label>
 
@@ -41,8 +41,8 @@
         </div>
 
         <label>
-            <input type=range min=0 max=9 step=1 data-label='VOL' onchange='sendCommand("SET_VOL", parseInt(this.value))' /> VOL
-            <b class='label' data-label='VOL'>?</b>
+            <input type=range min=0 max=9 step=1 data-label='GET_VOL' onchange='sendCommand("SET_VOL", parseInt(this.value))' /> VOL
+            <b class='label' data-label='GET_VOL'>?</b>
         </label>
 
     </body>
@@ -66,17 +66,24 @@
             labelMap[l.dataset.label] = l;
         }
 
+        function setRadio(freq) {
+            sendCommand("SET_RADIO", freq);
+            updateState('RADIO_FREQ', freq);
+        }
+        function updateState(k, v) {
+            console.log(k, v);
+            if (k in labelMap) {
+                labelMap[k].innerText = v;
+            }
+            if (k in inputMap) {
+                inputMap[k].value = v;
+            }
+        }
         ws.onmessage = function(m) {
             var data = JSON.parse(m.data);
             for (var k in data) {
                 v = data[k];
-                console.log(k, v);
-                if (k in labelMap) {
-                    labelMap[k].innerText = v;
-                }
-                if (k in inputMap) {
-                    inputMap[k].value = v;
-                }
+                updateState(k, v);
             }
         };
 
