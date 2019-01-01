@@ -4,7 +4,7 @@ import time
 import redis
 
 from divoom.image import solid_color, _pack_tuples_to_image
-from divoom.protocol import Commands, Command, freq_to_bytes
+from divoom.protocol import Commands, Command, freq_to_bytes, Replies
 from queue import Queue
 from threading import Thread
 from websocket_server import WebsocketServer
@@ -44,6 +44,8 @@ def msg_received_ws(q):
             return
 
         value = transform_value(command, msg['value'])
+        if command == Commands.SET_RADIO: # FIXME updating local state for radio freq?
+            state[Replies.RADIO_FREQ.name] = msg['value']
         print("Got %s from a ws client; putting to queue" % msg)
         print(value)
         q.put((command, value))
