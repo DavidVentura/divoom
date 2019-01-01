@@ -9,7 +9,7 @@ setup(
     entry_points = {
         'console_scripts': ['dvcli=divoom.cli:main',
                             'dvserver=divoom.server:main',
-                            'dv-ws-server=divoom.ws:main'],
+                            'dv-ws-server=web.ws:main'],
     },
     install_requires=[
         'PyBluez==0.22',
