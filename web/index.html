@@ -56,15 +56,13 @@
         var color = '#F00';
         var canvasState = Array(size*size).fill(0);
 
-        var labels = document.querySelectorAll('.label[data-label]');
-        var inputs = document.querySelectorAll('input[data-label]');
         var labelMap = {};
         var inputMap = {};
 
-        for (var i of inputs) {
+        for (var i of document.querySelectorAll('input[data-label]')) {
             inputMap[i.dataset.label] = i;
         }
-        for (var l of labels) {
+        for (var l of document.querySelectorAll('.label[data-label]')) {
             labelMap[l.dataset.label] = l;
         }
 
