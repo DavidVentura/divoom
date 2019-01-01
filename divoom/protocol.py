@@ -139,10 +139,10 @@ def split_reply(_bytes):
 
 def parse_reply_data(_type, _bytes):
     data = _bytes
-    if _type in (Command.SET_VOL, Command.GET_VOL):
+    if _type in (Commands.SET_VOL, Commands.GET_VOL):
         data = _bytes[0]
         _type = Command.GET_VOL
-    elif _type in (Command.SET_RADIO, Command.GET_RADIO):
+    elif _type in (Commands.SET_RADIO, Commands.GET_RADIO):
         data = bytes_to_freq(_bytes[:2])
         _type = Command.GET_RADIO
     elif _type == Replies.TEMP:
