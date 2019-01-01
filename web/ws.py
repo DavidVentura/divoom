@@ -52,9 +52,9 @@ def handle_replies_redis(r_q):
     def _handle_replies_redis(message):
         m = message['data'].decode('ascii')
         data = json.loads(m)
-        print('from redis', data)
         state.update(data)
         r_q.put(m)
+    return _handle_replies_redis
 
 def main():
     r_q = Queue()
@@ -84,6 +84,6 @@ def main():
         if not r_q.empty():
             data = r_q.get()
             print('from redis', data)
-            server.send_message_to_all(daa)
+            server.send_message_to_all(data)
         p.get_message()
-        time.sleep(1)
+        time.sleep(0.1)
