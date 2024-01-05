@@ -9,6 +9,12 @@ class _PROTO:
     END_BYTE = [0x02]
 
 
+class Brightness(Enum):
+    HIGH = [0xD2]
+    LOW = [0x3F]
+    OFF = [0x00]
+
+
 class Commands(Enum):
     STATIC_IMG = [0x44, 0x00, 0x0A, 0x0A, 0x04]
     SWITCH_VIEW = [0x45]
@@ -255,10 +261,3 @@ def bytes_to_freq(_bytes):
     first = _bytes[1] * 10
     second = _bytes[0] / 10
     return first + second
-
-
-class DitooProShowImageCommand(Command):
-    def __init__(self, image: DitooProImage):
-        self.image = image
-
-        super().__init__(Commands.DITOOPRO_SHOW_ANIM, None, image.serialize(), False)
