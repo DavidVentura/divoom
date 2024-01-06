@@ -11,6 +11,7 @@ class Type(Enum):
     DEFAULT = 0
     DITOO_PRO = 1
 
+
 @dataclasses.dataclass
 class Config:
     port: int
@@ -24,6 +25,7 @@ CONFIG_MAP = {
     Type.DITOO_PRO: Config(2, None, 16),
 }
 
+
 class Device:
     def __init__(self, addr: str, type_: Type = Type.DEFAULT, timeout=1):
         self.sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -32,12 +34,12 @@ class Device:
         self.type_ = type_
 
     def _connect(self):
-        port, hello_bytes, _ = CONFIG_MAP[self.type_]
-        self.sock.connect((self.addr, port))
+        cfg = CONFIG_MAP[self.type_]
+        self.sock.connect((self.addr, cfg.port))
 
-        if hello_bytes is not None:
+        if cfg.hello_bytes is not None:
             resp = list(self.sock.recv(256))
-            assert resp == hello_bytes
+            assert resp == cfg.hello_bytes
 
     def _disconnect(self):
         self.sock.close()
@@ -74,14 +76,13 @@ class Device:
         pass
 
 
-
 class Timebox(Device):
-    def __init__(self, addr: str, timeout: int=1) -> None:
+    def __init__(self, addr: str, timeout: int = 1) -> None:
         super().__init__(addr, Type.DEFAULT, timeout)
 
 
 class DitooPro(Device):
-    def __init__(self, addr: str, timeout: int=1) -> None:
+    def __init__(self, addr: str, timeout: int = 1) -> None:
         super().__init__(addr, Type.DITOO_PRO, timeout)
 
     def show_anim(self, image: DitooProImage) -> None:
