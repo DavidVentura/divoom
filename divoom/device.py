@@ -1,6 +1,8 @@
+import struct
 import dataclasses
 import bluetooth
 import logging
+from typing import Iterable
 from enum import Enum
 from divoom.protocol import parse_reply, split_reply, DitooProImage, Command, Commands
 
@@ -86,6 +88,18 @@ class DitooPro(Device):
         super().__init__(addr, Type.DITOO_PRO, timeout)
 
     def show_anim(self, image: DitooProImage) -> None:
-        cmd = Command(Commands.DITOOPRO_SHOW_ANIM, None, image.serialize(), False)
+        buf = b"".join(image.serialize())
 
-        self.send(cmd.command, True)
+        start_buf = struct.pack("=BHH", 0x0, len(buf), 0)
+        cmd = Command(Commands.DITOOPRO_SHOW_ANIM, None, start_buf, False)
+        self.send(cmd.command)
+
+        for i, chunk in enumerate(self._chunked(buf, 0x100)):
+            data_cmd: bytes = struct.pack(
+                f"=BHHH{len(chunk)}s", 0x1, len(buf), 0, i, chunk
+            )
+            cmd = Command(Commands.DITOOPRO_SHOW_ANIM, None, data_cmd, False)
+            self.send(cmd.command, True)
+
+    def _chunked(self, s: bytes, size: int) -> Iterable:
+        return (s[i : i + size] for i in range(0, len(s), size))
