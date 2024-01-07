@@ -1,7 +1,7 @@
 import struct
 import dataclasses
-import bluetooth
 import logging
+import socket
 from typing import Iterable
 from enum import Enum
 from divoom.protocol import parse_reply, split_reply, DitooProImage, Command, Commands
@@ -30,7 +30,7 @@ CONFIG_MAP = {
 
 class Device:
     def __init__(self, addr: str, type_: Type = Type.DEFAULT, timeout=1):
-        self.sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+        self.sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
         self.addr = addr
         self.timeout = timeout
         self.type_ = type_

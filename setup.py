@@ -12,10 +12,7 @@ setup(
                             'dv-ws-server=web.ws:main'],
     },
     install_requires=[
-        'PyBluez==0.22',
-        'redis>=3.0.1',
         'pillow>=5.3.0',
-        'websocket-server>=0.4',
     ],
     extras_requires={
         'dev': [
