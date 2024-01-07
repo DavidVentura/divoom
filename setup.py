@@ -7,9 +7,7 @@ setup(
     license='GPLv3',
     long_description=open('README.md').read(),
     entry_points = {
-        'console_scripts': ['dvcli=divoom.cli:main',
-                            'dvserver=divoom.server:main',
-                            'dv-ws-server=web.ws:main'],
+        'console_scripts': ['divoom=divoom.cli:main'],
     },
     install_requires=[
         'pillow>=5.3.0',
