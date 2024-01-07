@@ -1,25 +1,75 @@
 #!/usr/bin/env python3
+import abc
 import struct
 from enum import Enum
 from .image import DitooProImage
 
 
 class _PROTO:
-    START_BYTE = [0x01]
-    END_BYTE = [0x02]
+    START_BYTE = bytes([0x01])
+    END_BYTE = bytes([0x02])
 
 
-class Brightness(Enum):
+class BrightnessValues(Enum):
+    NO_CHANGE = []
     HIGH = [0xD2]
     LOW = [0x3F]
     OFF = [0x00]
 
+class Command(abc.ABC):
+    @abc.abstractmethod
+    def encode(self) -> bytes:
+        ...
+
+class Brightness(Command):
+    def __init__(self, value: BrightnessValues):
+        self.value = value
+
+    def encode(self) -> bytes:
+        return bytes(Commands.BRIGHTNESS.value + self.value.value)
+
+class Views(Enum):
+    CLOCK_12 = [0x00, 0x00]
+    CLOCK_24 = [0x00, 0x01]
+    TEMP_C = [0x01, 0x00]
+    TEMP_F = [0x01, 0x01]
+    ANIM_HC = [0x02]
+    OFF = [0x03]
+    EQ = [0x04]
+    ANIM_DYN = [0x05]
+    STOPWATCH = [0x06, 0x00]
+    SCORE = [0x07, 0x00]
+
+class SwitchView(Command):
+    def __init__(self, view: Views):
+        self.view = view
+    def encode(self) -> bytes:
+        return bytes(Commands.SWITCH_VIEW.value + self.view.value)
+
+class AudioMode(Enum):
+    # "Radio ON"
+    RADIO = [0x01]
+    BLUETOOTH = [0x00]
+
+class SetMode(Command):
+    def __init__(self, mode: AudioMode):
+        self.mode = mode
+    def encode(self):
+        return bytes(Commands.AUDIO_MODE.value + self.mode.value)
+
+class SetRadio(Command):
+    def __init__(self, freq: float):
+        self.freq = freq
+    def encode(self):
+        return bytes(Commands.SET_RADIO.value + freq_to_bytes(self.freq))
+
+class Errors(Enum):
+    RADIO_NOT_ON = [0xB]
 
 class Commands(Enum):
     STATIC_IMG = [0x44, 0x00, 0x0A, 0x0A, 0x04]
     SWITCH_VIEW = [0x45]
-    RADIO_ON = [0x05, 0x01]
-    RADIO_OFF = [0x05, 0x00]
+    AUDIO_MODE = [0x05]
     MUTE = [0x0A, 0x00]
     UNMUTE = [0x0A, 0x01]
     # BRIGHTNESS = [0x32]
@@ -37,26 +87,6 @@ class Commands(Enum):
     DITOOPRO_SHOW_ANIM = [0x8B]
 
 
-class Views(Enum):
-    CLOCK_12 = [0x00, 0x00]
-    CLOCK_24 = [0x00, 0x01]
-    TEMP_C = [0x01, 0x00]
-    TEMP_F = [0x01, 0x01]
-    ANIM_HC = [0x02]
-    OFF = [0x03]
-    EQ = [0x04]
-    ANIM_DYN = [0x05]
-    STOPWATCH = [0x06, 0x00]
-    SCORE = [0x07, 0x00]
-
-
-class Arguments(Enum):
-    NONE = []
-    BR_HIGH = [0xD2]
-    BR_LOW = [0x3F]
-    BR_OFF = [0x00]
-
-
 class Replies(Enum):
     GET_VOL = 0x08
     SET_VOL = 0x09
@@ -67,63 +97,6 @@ class Replies(Enum):
     _SWITCH_VIEW = 0x45
     SWITCH_VIEW = 0x46
     UNKNOWN = 0x0
-
-
-class Command:
-    def __init__(self, action, args, extra_bytes=[], escaped: bool = True):
-        self._action = action
-        self._args = args
-
-        message = [*(action.value)]
-        if args:
-            message.extend(args.value)
-        if extra_bytes:
-            message.extend(extra_bytes)
-
-        _message_m = mask(message) if escaped else message
-        _length = message_length_b(message)
-        _length_m = mask(_length) if escaped else _length
-
-        _ck = checksum(_length + message)
-        if escaped:
-            _ck = mask(_ck)
-        self._command = (
-            _PROTO.START_BYTE + _length_m + _message_m + _ck + _PROTO.END_BYTE
-        )
-
-    @property
-    def args(self):
-        if self._args:
-            return self._args.name
-        else:
-            return "<>"
-
-    @property
-    def action(self):
-        return self._action.name
-
-    @property
-    def command(self):
-        return self._command
-
-    def __repr__(self):
-        return "%s %s" % (self.action, self.args)
-
-    @classmethod
-    def from_bytes(cls, _bytes):
-        _bytes = _bytes[3:-3]  # head, length, length, *, cksum, cksum, tail
-        command = None
-        for c in Commands:
-            if c.value[0] == _bytes[0]:
-                command = c
-        if command is None:
-            raise ValueError("%s is an invalid command" % _bytes[0])
-
-        extra_bytes = []
-        if len(_bytes) > 1:
-            extra_bytes = _bytes[1:]
-        return cls(command, None, extra_bytes)
-
 
 def valid_command(_bytes):
     return (
@@ -147,6 +120,7 @@ def error_reply(_bytes):
         return _bytes[1], _bytes[3:-3]
     # 3 => -3 to convert
     # [head, command, 0xaa, _, cksum1, cksum2, tail] => [_]
+    return None, None
 
 
 def split_reply(_bytes):
@@ -197,10 +171,18 @@ def parse_reply_data(_type, _bytes):
 
 def parse_reply(_bytes):
     assert valid_command(_bytes)
-    head, *payload, tail = _bytes
+    failed_command, error = error_reply(_bytes)
+    if error:
+        if error == Errors.RADIO_NOT_ON.value:
+            raise ValueError(f"Radio is not ON")
+        raise ValueError(f"Got error {error}")
+
+    _, *payload, _ = _bytes
     payload = unmask(payload)
+    # 0x61 0xaa 0xb 0x3 0x4
     payload = payload[:-2]  # discard checksum
-    length = int.from_bytes(payload[0:1], "little")
+    # 0x61 0xaa 0xb
+    print(payload)
     command = payload[3]  # payload[2] == 0x4, payload[4] == 0x55
     data = payload[5:]
     print("command", hex(command), "data", data)
@@ -214,36 +196,12 @@ def parse_reply(_bytes):
 def message_length_b(message):
     # 2 extra bytes to store the length
     _length = len(message) + 2
-    return list(struct.pack("<h", _length))
+    return struct.pack("<h", _length)
 
 
 def checksum(message):
     _bytes = sum(message).to_bytes(2, byteorder="little")
-    return list(_bytes)
-
-
-def mask(_bytes):
-    ret = []
-    for b in _bytes:
-        if b in (0x1, 0x2, 0x3):
-            ret.append(0x03)
-            ret.append(b + 3)
-        else:
-            ret.append(b)
-    return ret
-
-
-def unmask(_bytes):
-    ret = []
-    i = 0
-    while i < len(_bytes):
-        b = _bytes[i]
-        if b == 0x3:
-            b = _bytes[i + 1] - 0x3
-            i += 1
-        ret.append(b)
-        i += 1
-    return ret
+    return _bytes
 
 
 def freq_to_bytes(freq):
@@ -253,6 +211,7 @@ def freq_to_bytes(freq):
         ret = [int(freq - 1000), int(freq / 100)]
     else:
         ret = [int(freq % 100), int(freq / 100)]
+    print(ret)
     return ret
 
 

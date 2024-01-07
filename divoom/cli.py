@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-from divoom.protocol import Command, Commands, Views, Arguments, parse_reply, split_reply, freq_to_bytes
-from divoom.image import solid_color
-import json
+import argparse
 import time
-import threading
-import redis
-import queue
-import random
 
-#commands = [Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
-#            Command(Commands.BRIGHTNESS, Arguments.BR_LOW),
-#            Command(Commands.BRIGHTNESS, Arguments.BR_OFF),
-#            Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
+from divoom.protocol import Brightness, SwitchView, Views, BrightnessValues, AudioMode, SetMode, SetRadio
+from divoom.device import Timebox, DitooPro
+
+#commands = [Command(Commands.BRIGHTNESS, Brightness.HIGH),
+#            Command(Commands.BRIGHTNESS, Brightness.LOW),
+#            Command(Commands.BRIGHTNESS, Brightness.OFF),
+#            Command(Commands.BRIGHTNESS, Brightness.HIGH),
 #            Command(Commands.SWITCH_VIEW, Views.TEMP_C, extra_bytes=[0x00, 0xff, 0x00]),
 #            Command(Commands.SWITCH_VIEW, Views.TEMP_C, extra_bytes=[0x00, 0xff, 0xff]),
 #            Command(Commands.SWITCH_VIEW, Views.TEMP_C, extra_bytes=[0xff, 0xff, 0x00]),
@@ -20,40 +17,64 @@ import random
 #            Command(Commands.SWITCH_VIEW, Views.CLOCK_24),
 #           ]
 
-commands = [
-            Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
-            Command(Commands.STATIC_IMG, Arguments.NONE, extra_bytes=solid_color(0xf,0,0)),
-            Command(Commands.BRIGHTNESS, Arguments.BR_OFF),
-            Command(Commands.BRIGHTNESS, Arguments.BR_LOW),
-            Command(Commands.BRIGHTNESS, Arguments.BR_HIGH),
-           ]
+def valid_fm_freq(val):
+    try:
+        val = float(val)
+    except Exception:
+        raise argparse.ArgumentTypeError(f"FM frequencies must be numbers (ie: 107.5)")
 
-commands = [
-            Command(Commands.GET_VOL, None),
-            Command(Commands.GET_VOL, None),
-            Command(Commands.GET_VOL, None),
-            Command(Commands.GET_RADIO, None),
-            Command(Commands.GET_RADIO, None),
-            Command(Commands.GET_RADIO, None),
-            Command(Commands.SET_RADIO, None, freq_to_bytes(100.3)),
-            Command(Commands.SET_RADIO, None, freq_to_bytes(100.5)),
-            Command(Commands.SET_RADIO, None, freq_to_bytes(100.7)),
-            Command(Commands.GET_RADIO, None),
-            Command(Commands.GET_RADIO, None),
-            Command(Commands.GET_RADIO, None),
-           ]
+    if val < 87.5 or val > 108.0:
+        raise argparse.ArgumentTypeError(f"FM frequencies must be between 87.5 and 108.0")
+    return val
 
-def handle_replies(message):
-    data = json.loads(message['data'].decode('ascii'))
-    print(data)
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--address', required=True)
+    parser.add_argument('--device', required=True, choices=['TimeBox', 'DitooPro'])
+
+    subparsers = parser.add_subparsers(dest='command')
+
+    br_sub = subparsers.add_parser('brightness')
+    br_sub.add_argument('value', choices=[e.name.lower() for e in BrightnessValues])
+
+    view_sub = subparsers.add_parser('view')
+    view_sub.add_argument('value', choices=[e.name.lower() for e in Views])
+
+    set_audio_mode = subparsers.add_parser('set_audio_mode')
+    set_audio_mode.add_argument('value', choices=[e.name.lower() for e in AudioMode])
+
+    set_radio_sub = subparsers.add_parser('set_radio_freq')
+    set_radio_sub.add_argument('value', type=valid_fm_freq)
+
+    return parser.parse_args()
 
 def main():
-    r = redis.Redis(host='localhost', port=6379, db=0)
-    p = r.pubsub()
-    p.subscribe(replies=handle_replies)
+    args = parse_args()
+    commands = []
 
-    while True:
-        b = Command(Commands.SET_RADIO, None, freq_to_bytes(random.randrange(890, 1079) / 10)).command
-        r.publish('commands', bytes(b))
-        p.get_message()
-        time.sleep(1)
+    if args.command == 'brightness':
+        # Brightness(Brightness.OFF)
+        commands = [Brightness(BrightnessValues[args.value.upper()])]
+    if args.command == 'view':
+        # View
+        commands = [SwitchView(Views[args.value.upper()])]
+    if args.command == 'set_audio_mode':
+        commands = [SetMode(AudioMode[args.value.upper()])]
+    if args.command == 'set_radio_freq':
+        commands = [SetRadio(args.value)]
+    cls = None
+    if args.device == 'TimeBox':
+        cls = Timebox
+    if args.device == 'DitooPro':
+        cls = DitooPro
+
+    assert cls
+
+    if not commands:
+        print("Nothing to do")
+        return
+
+    with cls(args.address) as d:
+        for command in commands:
+            d.send(command)
+            time.sleep(0.1)

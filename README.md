@@ -3,11 +3,15 @@ An attempt to consolidate some bits of information about divoom into a clean pyt
 2. https://github.com/mumpitzstuff/fhem-Divoom
 3. https://gitlab.com/ursfassler/divoom-playground
 
+# Example usage as CLI
+```
+$ divoom --device TimeBox --address '11:75:58:78:DB:05' set_audio_mode radio 
+$ divoom --device TimeBox --address '11:75:58:78:DB:05' set_radio_freq 105.7 
+$ divoom --device TimeBox --address '11:75:58:78:DB:05' brightness high
+```
 # Features
 
 - (Implemented parts of) the protocol is fully tested
-- Server is decoupled from control (via redis pubsub) - the connection can remain open permanently
-    - Writing a web front end for this should be easy
 
 Implemented parts of the Protocol:
 - Switch view
